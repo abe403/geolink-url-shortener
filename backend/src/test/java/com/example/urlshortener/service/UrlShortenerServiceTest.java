@@ -35,9 +35,7 @@ class UrlShortenerServiceTest {
 
     private static final String ORIGINAL_URL = "https://www.example.com";
 
-    @BeforeEach
-    void setUp() {
-        // Ensure no short code collision by default
+    private void stubSuccessfulSave() {
         when(shortUrlRepository.existsByShortCode(anyString())).thenReturn(false);
         when(shortUrlRepository.save(any(ShortUrl.class))).thenAnswer(invocation -> {
             ShortUrl url = invocation.getArgument(0);
@@ -51,6 +49,7 @@ class UrlShortenerServiceTest {
     @Test
     @DisplayName("shortenUrl should return a ShortUrl with a 6-character Base62 code")
     void shortenUrl_shouldReturnValidShortCode() {
+        stubSuccessfulSave();
         ShortUrl result = urlShortenerService.shortenUrl(ORIGINAL_URL);
 
         assertThat(result).isNotNull();
@@ -62,6 +61,7 @@ class UrlShortenerServiceTest {
     @Test
     @DisplayName("shortenUrl should preserve the original URL exactly")
     void shortenUrl_shouldPreserveOriginalUrl() {
+        stubSuccessfulSave();
         ShortUrl result = urlShortenerService.shortenUrl(ORIGINAL_URL);
         assertThat(result.getOriginalUrl()).isEqualTo(ORIGINAL_URL);
     }
@@ -69,6 +69,7 @@ class UrlShortenerServiceTest {
     @Test
     @DisplayName("shortenUrl should call repository.save exactly once")
     void shortenUrl_shouldPersistEntity() {
+        stubSuccessfulSave();
         urlShortenerService.shortenUrl(ORIGINAL_URL);
         verify(shortUrlRepository, times(1)).save(any(ShortUrl.class));
     }
@@ -80,18 +81,22 @@ class UrlShortenerServiceTest {
         when(shortUrlRepository.existsByShortCode(anyString()))
                 .thenReturn(true)
                 .thenReturn(false);
+        when(shortUrlRepository.save(any(ShortUrl.class))).thenAnswer(invocation -> {
+            ShortUrl url = invocation.getArgument(0);
+            url.setId(1L);
+            return url;
+        });
 
         ShortUrl result = urlShortenerService.shortenUrl(ORIGINAL_URL);
 
-        // Should still succeed after retry
         assertThat(result.getShortCode()).isNotBlank();
-        // existsByShortCode should have been called at least twice
         verify(shortUrlRepository, atLeast(2)).existsByShortCode(anyString());
     }
 
     @Test
     @DisplayName("Different URLs should generate different short codes")
     void shortenUrl_shouldGenerateUniqueCodesForDifferentUrls() {
+        stubSuccessfulSave();
         ShortUrl first = urlShortenerService.shortenUrl("https://www.reddit.com");
         ShortUrl second = urlShortenerService.shortenUrl("https://www.github.com");
 
