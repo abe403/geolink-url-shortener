@@ -1,5 +1,5 @@
 import { test, expect, APIRequestContext, APIResponse } from '@playwright/test';
-import { ENV, TEST_URLS } from '../../utils/test-data';
+import { ENV, TEST_URLS } from '../utils/test-data';
 
 /**
  * Test Suite: REST API Contract Tests

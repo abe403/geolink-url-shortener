@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../../pages/DashboardPage';
-import { TEST_URLS, TIMEOUTS, PAGINATION } from '../../utils/test-data';
+import { DashboardPage } from '../pages/DashboardPage';
+import { TEST_URLS, TIMEOUTS, PAGINATION } from '../utils/test-data';
 
 /**
  * Test Suite: URL Shortener — Core Functionality

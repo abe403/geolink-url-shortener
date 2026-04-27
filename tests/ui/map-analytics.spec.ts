@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../../pages/DashboardPage';
-import { TEST_IPS, TEST_URLS, TIMEOUTS } from '../../utils/test-data';
+import { DashboardPage } from '../pages/DashboardPage';
+import { TEST_IPS, TEST_URLS, TIMEOUTS } from '../utils/test-data';
 
 /**
  * Test Suite: Map & Geolocation Analytics
