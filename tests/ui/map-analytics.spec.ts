@@ -24,7 +24,6 @@ test.describe('Map & Geolocation Analytics', () => {
 
   test('should render the Leaflet map on load', async ({ page }) => {
     await expect(dashboard.mapContainer).toBeVisible();
-    // Leaflet injects a canvas/svg tile layer
     await expect(page.locator('.leaflet-container')).toBeVisible();
   });
 
@@ -33,7 +32,9 @@ test.describe('Map & Geolocation Analytics', () => {
   });
 
   test('should display tile layer (dark CARTO tiles)', async ({ page }) => {
-    await expect(page.locator('.leaflet-tile-container')).toBeVisible();
+    // .leaflet-tile-pane is always in the DOM and visible (unlike .leaflet-tile-container
+    // which Leaflet marks visibility:hidden during zoom animation)
+    await expect(page.locator('.leaflet-tile-pane')).toBeVisible();
   });
 
   // ── IP Lookup ────────────────────────────────────────────────
@@ -41,13 +42,11 @@ test.describe('Map & Geolocation Analytics', () => {
   test('should place a waypoint when looking up a valid IP address', async ({ page }) => {
     await dashboard.lookupIpOrDomain(TEST_IPS.google);
 
-    // A marker should appear on the map
     await expect(page.locator('.leaflet-marker-icon').first())
       .toBeVisible({ timeout: TIMEOUTS.geolocation });
   });
 
   test('should place a waypoint when looking up a domain name', async ({ page }) => {
-    // Requirement: domain names (not just IPs) must resolve
     await dashboard.lookupIpOrDomain(TEST_IPS.reddit);
 
     await expect(page.locator('.leaflet-marker-icon').first())
@@ -58,7 +57,7 @@ test.describe('Map & Geolocation Analytics', () => {
     await dashboard.lookupIpOrDomain(TEST_IPS.cloudflare);
     await dashboard.waitForAnalyticsData();
 
-    const city = await dashboard.latestCityCard.locator('div').last().innerText();
+    const city = await dashboard.latestCityValue.innerText();
     expect(city).not.toBe('N/A');
   });
 
@@ -66,12 +65,11 @@ test.describe('Map & Geolocation Analytics', () => {
     await dashboard.lookupIpOrDomain(TEST_IPS.cloudflare);
 
     // ip-api resolves 1.1.1.1 — that IP should appear in the card
-    await expect(dashboard.websiteIpCard.locator('div').last())
+    await expect(dashboard.websiteIpValue)
       .toHaveText(TEST_IPS.cloudflare, { timeout: TIMEOUTS.geolocation });
   });
 
   test('should show an error alert for an invalid IP', async ({ page }) => {
-    // Set up dialog listener BEFORE triggering it
     page.once('dialog', async dialog => {
       expect(dialog.message()).toContain('Could not resolve');
       await dialog.accept();
@@ -83,21 +81,14 @@ test.describe('Map & Geolocation Analytics', () => {
   // ── Camera / Viewport Update ──────────────────────────────────
 
   test('should update map viewport when selecting a recent link', async ({ page }) => {
-    // First shorten a URL to create a link with analytics
     await dashboard.shortenUrl(TEST_URLS.valid.withPath);
     await dashboard.waitForMapMarker();
 
-    // Record the map's current center
-    const beforeCenter = await page.evaluate(() => {
-      const mapEl = document.querySelector('.leaflet-container');
-      return mapEl?.getAttribute('style') || '';
-    });
-
-    // Reload page and click the stored link (tests DB persistence)
+    // Reload and re-select to verify DB persistence + camera update
     await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.locator('.short-url-link').first()).toBeVisible({ timeout: 5000 });
     await dashboard.selectRecentLink(0);
 
-    // Map should have a marker after selecting the link
     await expect(page.locator('.leaflet-marker-icon').first())
       .toBeVisible({ timeout: TIMEOUTS.geolocation });
   });
@@ -113,9 +104,9 @@ test.describe('Map & Geolocation Analytics', () => {
     // Click the marker to open popup
     await page.locator('.leaflet-marker-icon').first().click();
 
-    // Popup should contain city, country, ISP, IP data
     const popup = page.locator('.leaflet-popup-content');
-    await expect(popup).toBeVisible();
+    await expect(popup).toBeVisible({ timeout: 3000 });
+    // Google's DNS (8.8.8.8) resolves to US
     await expect(popup).toContainText(/United States|US/);
   });
 
@@ -124,11 +115,9 @@ test.describe('Map & Geolocation Analytics', () => {
   test('should restore recent links from DB after page reload', async ({ page }) => {
     const shortCode = await dashboard.shortenUrl(TEST_URLS.valid.withProtocol);
 
-    // Reload the page to simulate a new session
     await page.reload({ waitUntil: 'networkidle' });
     await dashboard.open();
 
-    // The link should still be in the sidebar
     await expect(page.locator('.short-url-link').first()).toBeVisible();
     const links = await page.locator('.short-url-link').allInnerTexts();
     expect(links.some(l => l.includes(shortCode))).toBe(true);

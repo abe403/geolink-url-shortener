@@ -86,11 +86,10 @@ test.describe('URL Shortener — Core Functionality', () => {
     await dashboard.shortenUrl(TEST_URLS.valid.withPath);
 
     // The Website IP card should update from "N/A" to a real IP
-    await expect(dashboard.websiteIpCard.locator('div').last())
+    await expect(dashboard.websiteIpValue)
       .not.toHaveText('N/A', { timeout: TIMEOUTS.geolocation });
 
     const ip = await dashboard.getWebsiteIp();
-    // Basic IP format validation
     expect(ip).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/);
   });
 
@@ -106,8 +105,8 @@ test.describe('URL Shortener — Core Functionality', () => {
     await dashboard.shortenUrl(TEST_URLS.valid.withPath);
     await dashboard.waitForAnalyticsData();
 
-    const region = await dashboard.topRegionCard.locator('div').last().innerText();
-    const city = await dashboard.latestCityCard.locator('div').last().innerText();
+    const region = await dashboard.topRegionValue.innerText();
+    const city = await dashboard.latestCityValue.innerText();
 
     expect(region).not.toBe('N/A');
     expect(city).not.toBe('N/A');
@@ -145,6 +144,7 @@ test.describe('URL Shortener — Core Functionality', () => {
     }
 
     const firstPageItems = await page.locator('.short-url-link').allInnerTexts();
+    // goToNextPage waits internally until the first item text changes
     await dashboard.goToNextPage();
 
     const secondPageItems = await page.locator('.short-url-link').allInnerTexts();
