@@ -31,15 +31,22 @@ public class GeolocationService {
 
     @Async
     public void recordWebsiteLocation(ShortUrl shortUrl) {
+        String originalUrl = shortUrl.getOriginalUrl();
         try {
-            URL url = new URL(shortUrl.getOriginalUrl());
+            // Ensure URL has a protocol for parsing
+            String normalized = originalUrl.contains("://") ? originalUrl : "https://" + originalUrl;
+            URL url = new URL(normalized);
             String host = url.getHost();
+            
+            log.info("Attempting to resolve website location for host: {}", host);
             InetAddress address = InetAddress.getByName(host);
             String ipAddress = address.getHostAddress();
-            log.info("Resolved domain {} to IP {}", host, ipAddress);
+            
+            log.info("Resolved {} to IP {}", host, ipAddress);
             processAndSaveGeolocation(shortUrl, ipAddress, "Website Origin");
         } catch (Exception e) {
-            log.error("Failed to resolve website location for {}", shortUrl.getOriginalUrl(), e);
+            log.warn("Could not resolve website origin for {}: {}. Recording as local fallback.", originalUrl, e.getMessage());
+            recordDefaultClick(shortUrl, "0.0.0.0"); // 0.0.0.0 indicates origin resolution failure
         }
     }
 
@@ -49,8 +56,8 @@ public class GeolocationService {
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
             if (response != null && "success".equals(response.get("status"))) {
-                double lat = (double) response.get("lat");
-                double lon = (double) response.get("lon");
+                double lat = ((Number) response.get("lat")).doubleValue();
+                double lon = ((Number) response.get("lon")).doubleValue();
                 Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
                 point.setSRID(4326);
 

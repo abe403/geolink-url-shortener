@@ -107,7 +107,7 @@ function App() {
       setAnalytics([]);    // clear stale markers
       setSelectedUrl(newEntry);
 
-      // Poll analytics for 6 seconds to catch the async geolocation result
+      // Poll analytics for 10 seconds to catch the async geolocation result
       let attempts = 0;
       if (pollingRef.current) clearInterval(pollingRef.current);
       pollingRef.current = setInterval(async () => {
@@ -124,7 +124,7 @@ function App() {
             clearInterval(pollingRef.current);
           }
         } catch (_) { /* ignore */ }
-        if (attempts >= 12) clearInterval(pollingRef.current); // stop after 6s
+        if (attempts >= 20) clearInterval(pollingRef.current); // stop after 10s
       }, 500);
 
     } catch (err) {
