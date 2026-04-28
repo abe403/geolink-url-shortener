@@ -197,10 +197,14 @@ function App() {
   // Cleanup polling on unmount
   useEffect(() => () => clearInterval(pollingRef.current), []);
 
-  const analyticsWithLocation = analytics.filter(c => c.latitude != null && c.longitude != null);
-  const topRegion   = analyticsWithLocation[0]?.country    ?? 'N/A';
-  const latestCity  = analyticsWithLocation[0]?.city       ?? 'N/A';
-  const websiteIp   = analyticsWithLocation[0]?.ipAddress  ?? 'N/A';
+  // Filter for valid coordinates (not null and not exactly 0,0 which is often a failure default)
+  const analyticsWithLocation = analytics.filter(c => 
+    c.latitude != null && c.longitude != null && (c.latitude !== 0 || c.longitude !== 0)
+  );
+  
+  const topRegion   = analyticsWithLocation[0]?.country    ?? (analytics[0]?.country || 'N/A');
+  const latestCity  = analyticsWithLocation[0]?.city       ?? (analytics[0]?.city || 'N/A');
+  const websiteIp   = analytics[0]?.ipAddress              ?? 'N/A';
 
   return (
     <div className="dashboard-container">

@@ -78,6 +78,9 @@ public class GeolocationService {
         Click click = Click.builder()
                 .shortUrl(shortUrl)
                 .ipAddress(ipAddress)
+                .city("Local")
+                .country("Local Network")
+                .isp("Private IP Range")
                 .build();
         clickRepository.save(click);
     }
