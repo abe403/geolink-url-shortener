@@ -6,6 +6,7 @@ import com.example.urlshortener.model.ShortUrl;
 import com.example.urlshortener.repository.ClickRepository;
 import com.example.urlshortener.service.GeolocationService;
 import com.example.urlshortener.service.UrlShortenerService;
+import com.example.urlshortener.service.GeminiInsightService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ public class UrlController {
     private final UrlShortenerService urlShortenerService;
     private final ClickRepository clickRepository;
     private final GeolocationService geolocationService;
+    private final GeminiInsightService geminiInsightService;
 
     @PostMapping("/shorten")
     public ResponseEntity<ShortUrl> shortenUrl(@RequestBody String originalUrl) {
@@ -65,5 +67,14 @@ public class UrlController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{shortCode}/insights")
+    public ResponseEntity<String> getGeminiInsights(@PathVariable String shortCode) {
+        ShortUrl url = urlShortenerService.getByShortCode(shortCode);
+        List<Click> clicks = clickRepository.findByShortUrlId(url.getId());
+        
+        String insight = geminiInsightService.generateSpatialInsight(clicks);
+        return ResponseEntity.ok(insight);
     }
 }
